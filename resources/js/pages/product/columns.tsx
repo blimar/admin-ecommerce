@@ -92,7 +92,7 @@ export const columns: ColumnDef<
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/products/${product.id}/variants`}>View variants</Link>
+                            <Link href={route('products.variants.index', [product.id])}>View variants</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDelete} variant="destructive">
                             Delete

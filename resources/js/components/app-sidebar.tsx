@@ -37,19 +37,19 @@ const data = {
 
         {
             title: 'Dashboard',
-            url: '/dashboard',
+            url: route('dashboard'),
             icon: IconHome,
         },
 
         {
             title: 'Category',
-            url: '/dashboard/categories',
+            url: route('categories.index'),
             icon: IconListDetails,
         },
 
         {
             title: 'Products',
-            url: '/dashboard/products',
+            url: route('products.index'),
             icon: IconPackageExport,
         },
 

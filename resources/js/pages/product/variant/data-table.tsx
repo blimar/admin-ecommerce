@@ -48,7 +48,7 @@ export function DataTable<TData, TValue>({ columns, data, productId }: DataTable
                         className="max-w-sm"
                     />
 
-                    <Link href={`/dashboard/products/${productId}/variants/create`}>
+                    <Link href={route('products.variants.create', [productId])}>
                         <Button>
                             <Plus />
                             Create

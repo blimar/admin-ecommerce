@@ -14,8 +14,8 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
             $table->uuid('product_variant_id');
-            $table->float('price');
             $table->integer('quantity');
+            $table->float('price');
             $table->timestamps();
 
             $table->foreign('order_id')->references('id')->on('orders');
