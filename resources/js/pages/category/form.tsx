@@ -36,7 +36,15 @@ export default function CategoryForm({ category }: Props) {
                 },
             });
         } else {
-            post(route('categories.store'));
+            post(route('categories.store'), {
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'Sukses',
+                        text: 'Kategori Berhasil Dibuat',
+                        icon: 'success'
+                    })
+                }
+            });
         }
     };
     return (

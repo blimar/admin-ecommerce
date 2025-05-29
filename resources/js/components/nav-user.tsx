@@ -34,7 +34,7 @@ export function NavUser({
         });
 
         if (confirm.isConfirmed) {
-            router.visit('/dashboard/logout', {
+            router.visit(route('logout'), {
                 method: 'post',
             });
         }

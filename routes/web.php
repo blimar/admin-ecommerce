@@ -49,9 +49,7 @@ use Inertia\Inertia;
 
 
 
-Route::prefix('/admin')->middleware([
-    // 'auth', 'admin'
-])->group(function () {
+Route::prefix('/admin')->middleware(['auth', 'admin'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('products', ProductController::class);
     Route::resource('products.variants', ProductVariantController::class);

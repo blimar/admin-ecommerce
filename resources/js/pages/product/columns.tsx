@@ -69,7 +69,7 @@ export const columns: ColumnDef<
             const product = row.original;
 
             const handleDelete = () => {
-                router.visit(`/dashboard/products/${product.id}`, {
+                router.visit(route('products.destroy', [product.id]), {
                     method: 'delete',
                 });
             };
@@ -88,7 +88,7 @@ export const columns: ColumnDef<
                             asChild
                             //   onClick={() => navigator.clipboard.writeText(payment.id)}
                         >
-                            <Link href={`/dashboard/products/${product.id}/edit`}>Edit</Link>
+                            <Link href={route('products.edit', [product.id])}>Edit</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
