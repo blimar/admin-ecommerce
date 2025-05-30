@@ -58,7 +58,7 @@ export const columns: ColumnDef<ProductVariant>[] = [
             const variant = row.original;
 
             const handleDelete = () => {
-                router.visit(`/dashboard/products/${variant.product_id}/variants/${variant.id}`, {
+                router.visit(route('products.variants.destroy', [variant.product_id, variant.id]), {
                     method: 'delete',
                     onSuccess: () => {
                         Swal.fire({
@@ -87,7 +87,7 @@ export const columns: ColumnDef<ProductVariant>[] = [
                             asChild
                             //   onClick={() => navigator.clipboard.writeText(payment.id)}
                         >
-                            <Link href={`/dashboard/products/${variant.product_id}/variants/${variant.id}/edit`}>Edit</Link>
+                            <Link href={route('products.variants.edit', [variant.product_id, variant.id])}>Edit</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleDelete} variant="destructive">

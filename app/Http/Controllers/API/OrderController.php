@@ -9,6 +9,7 @@ use App\Models\ProductVariant;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Builder\Function_;
 
 class OrderController extends Controller
 {
@@ -76,79 +77,147 @@ class OrderController extends Controller
     }
 
 
-    // public function payOrder(Request $request, Order $order)
-    // {
-    //     DB::beginTransaction();
+    public function payOrder(Request $request, Order $order)
+    {
+        DB::beginTransaction();
 
-    //     try {
-    //         if ($order->status == "PAID") {
-    //             throw new Exception("Order already paid");
-    //         }
+        try {
+            $user = $request->user();
 
-    //         if ($order->url != null) {
-    //             return response()->json([
-    //                 'data' => $order->url,
-    //                 'message' => 'Generate invoice successfully',
-    //             ]);
-    //         }
+            if ($order->user_id != $user->id) {
+                throw new Exception('This is not your order');
+            }
 
-    //         $apiKey = env('XENDIT_API_KEY');
+            if ($order->status == "PAID") {
+                throw new Exception("Order already paid");
+            }
 
-    //         $payload = [
-    //             'external_id' => (string) $order->id,
-    //             'description' => "Invoice for order {$order->id}",
-    //             'amount' => $order->total,
-    //             'invoice_duration' => 172800, // 2 hari dalam detik
-    //             'currency' => 'IDR',
-    //             'reminder_time' => 1,
-    //         ];
+            if ($order->url != null) {
+                return response()->json([
+                    'data' => $order->url,
+                    'message' => 'Generate invoice successfully',
+                ]);
+            }
 
-    //         // Siapkan cURL
+            $apiKey = env('XENDIT_API_KEY');
 
-    //         $ch = curl_init();
+            $payload = [
+                'external_id' => (string) $order->id,
+                'description' => "Invoice for order {$order->id}",
+                'amount' => (float) $order->total,
+                'invoice_duration' => 172800, // 2 hari dalam detik
+                'currency' => 'IDR',
+                'reminder_time' => 1,
+            ];
 
-    //         curl_setopt($ch, CURLOPT_URL, 'https://api.xendit.co/v2/invoices');
-    //         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //         curl_setopt($ch, CURLOPT_POST, true);
-    //         curl_setopt($ch, CURLOPT_POSTFIELDS);
-    //         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    //             'Content-Type: application/json',
-    //             'Authorization: Basic ' . base64_decode($apiKey . ':'),
-    //         ]);
+            // Siapkan cURL
 
-    //         $response = curl_exec($ch);
+            $ch = curl_init();
 
-    //         if (curl_errno($ch)) {
-    //             throw new Exception('Curl error: ' . curl_error($ch));
-    //         }
+            curl_setopt($ch, CURLOPT_URL, 'https://api.xendit.co/v2/invoices');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Authorization: Basic ' . base64_encode($apiKey . ':'),
+            ]);
 
-    //         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    //         curl_close($ch);
+            $response = curl_exec($ch);
 
-    //         if ($httpCode != 200 && $httpCode != 201) {
-    //             $errorResponse = json_decode($response, true);
-    //             $message = $errorResponse['message'] ?? 'Failed to create invoice';
-    //             throw new Exception($message);
-    //         }
+            if (curl_errno($ch)) {
+                throw new Exception('Curl error: ' . curl_error($ch));
+            }
 
-    //         $result = json_decode($response, true);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-    //         $order->url = $result['invoice_url'];
-    //         $order->save();
+            if ($httpCode != 200 && $httpCode != 201) {
+                $errorResponse = json_decode($response, true);
+                $message = $errorResponse['message'] ?? 'Failed to create invoice';
+                throw new Exception($message);
+            }
 
-    //         DB::commit();
+            $result = json_decode($response, true);
 
-    //         return response()->json([
-    //             'data' => $result['invoice_url'],
-    //             'message' => 'Generate invoice successfully',
-    //         ], 200);
-    //     } catch (Exception $e) {
-    //         DB::rollBack();
+            $order->url = $result['invoice_url'];
+            $order->save();
 
-    //         return response()->json([
-    //             'data' => null,
-    //             'message' => $e->getMessage(),
-    //         ]);
-    //     }
-    // }
+            DB::commit();
+
+            return response()->json([
+                'data' => $result['invoice_url'],
+                'message' => 'Generate invoice successfully',
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'data' => null,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function webhookPayment(Request $request)
+    {
+        $signature_header = $request->header('x-callback-token');
+        $secret = env('XENDIT_WEBHOOK_TOKEN');
+
+        if ($signature_header != $secret) {
+            return response()->json([
+                'data' => null,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $payload = $request->all();
+        $order = Order::find($payload['external_id']);
+
+        if (!$order) {
+            return response()->json([
+                'data' => null,
+                'message' => 'Order not found',
+            ], 404);
+        }
+
+        $order->update([
+            'status' => strtoupper($payload['status']),
+            'payment_channel' => $payload['payment_channel'],
+            'payment_method' => $payload['payment_method'],
+        ]);
+
+        return response()->json([
+            'data' => null,
+            'message' => 'Order status updated',
+        ], 200);
+    }
+
+    public function getOrders(Request $request)
+    {
+        $user = $request->user(); // mengambil data yang login
+        // $orders = Order::where('user_id', $user->id)->with(['orderItems'])->get();
+
+        return response()->json([
+            'data' => $user->load(['orders.orderItems']),
+            'message' => 'Get order success'
+        ], 200);
+    }
+
+    public function getOrder(Request $request, Order $order)
+    {
+        $user = $request->user();
+
+        if ($order->user_id != $user->id) {
+            return response()->json([
+                'data' => null,
+                'message' => 'This is not your orders'
+            ], 403);
+        }
+
+        return response()->json([
+            'data' => $order->load(['orderItems']),
+            'message' => 'Get order success'
+        ], 200);
+    }
 }
