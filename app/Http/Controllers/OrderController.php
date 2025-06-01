@@ -12,7 +12,10 @@ class OrderController extends Controller
      */
     public function index()
     {
-        //
+        $orders = Order::with('user')->get();
+        return inertia('order/index', [
+            'orders' => $orders
+        ]);
     }
 
     /**

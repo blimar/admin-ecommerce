@@ -58,6 +58,9 @@ Route::prefix('/admin')->middleware(['auth', 'admin'])->group(function () {
     })->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/orders', function () {
+        return inertia('order/index');
+    })->name('orders');
 });
 
 Route::get('/login', function () {

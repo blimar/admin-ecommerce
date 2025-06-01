@@ -5,7 +5,6 @@ import {
     IconFileDescription,
     IconHelp,
     IconHome,
-    IconInnerShadowTop,
     IconListDetails,
     IconNews,
     IconPackageExport,
@@ -55,7 +54,7 @@ const data = {
 
         {
             title: 'Orders',
-            url: '/orders',
+            url: route('orders'),
             icon: IconClipboardList,
         },
 
